@@ -10,6 +10,7 @@ import (
 	nucleiSDK "github.com/tongchengbin/nuclei-sdk"
 	"log"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -82,21 +83,33 @@ func main() {
 		Poc: []string{"cve_2024_4040"},
 		Url: "http://ctf.lostpeach.cn:41153",
 	}
+	wg := sync.WaitGroup{}
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, inputMeta struct {
+			Poc []string `json:"poc"`
+			Url string   `json:"url"`
+		}) {
+			defer wg.Done()
+			input := provider.NewSimpleInputProvider()
+			input.Set(inputMeta.Url)
+			ctx := context.Background()
+			events, err := nucleiSdk.ExecuteWithProvider(ctx, input, inputMeta.Poc)
+			if err != nil {
+				log.Fatal(err)
+			}
+			for _, event := range events {
+				_, err := json.Marshal(event)
+				if err != nil {
+					log.Fatalf("Could not marshal event: %s", err)
+				}
+				bc := nucleiSDK.FormatEvent(event)
+				_, _ = os.Stdout.Write(bc)
+				_, _ = os.Stdout.Write([]byte("\n"))
+			}
 
-	input := provider.NewSimpleInputProvider()
-	input.Set(inputMeta.Url)
-	ctx := context.Background()
-	events, err := nucleiSdk.ExecuteWithProvider(ctx, input, inputMeta.Poc)
-	if err != nil {
-		log.Fatal(err)
+		}(&wg, inputMeta)
 	}
-	for _, event := range events {
-		_, err := json.Marshal(event)
-		if err != nil {
-			log.Fatal("Could not marshal event: %s", err)
-		}
-		bc := nucleiSDK.FormatEvent(event)
-		_, _ = os.Stdout.Write(bc)
-		_, _ = os.Stdout.Write([]byte("\n"))
-	}
+	wg.Wait()
+
 }
