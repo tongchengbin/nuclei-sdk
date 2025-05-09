@@ -44,9 +44,9 @@ func main() {
 		Targets:                    []string{},
 		TargetsFilePath:            "",
 		Output:                     "",
-		Proxy:                      []string{},
+		Proxy:                      []string{"http://127.0.0.1:10808"},
 		TraceLogFile:               "",
-		Templates:                  []string{"example/CVE-2024-4040.yaml"},
+		Templates:                  []string{"example/cyberpanel-rce.yaml"},
 		ExcludedTemplates:          []string{},
 		CustomHeaders:              []string{},
 		InteractshURL:              "https://oast.fun",
@@ -80,8 +80,8 @@ func main() {
 		Poc []string `json:"poc"`
 		Url string   `json:"url"`
 	}{
-		Poc: []string{"cve_2024_4040"},
-		Url: "http://ctf.lostpeach.cn:41153",
+		Poc: []string{"cyberpanel_rce"},
+		Url: "https://54.93.204.224:8443",
 	}
 	wg := sync.WaitGroup{}
 	for i := 0; i < 3; i++ {
