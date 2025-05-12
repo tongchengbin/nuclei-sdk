@@ -163,7 +163,8 @@ func NewSimpleEngine(opts *types.Options) (*SimpleEngine, error) {
 
 func (e *SimpleEngine) ApplyRequireDefault() error {
 	var httpclient *retryablehttp.Client
-	if e.opts.ProxyInternal && types.ProxyURL != "" || types.ProxySocksURL != "" {
+
+	if e.opts.ProxyInternal && e.opts.AliveHttpProxy != "" || e.opts.AliveSocksProxy != "" {
 		var err error
 		httpclient, err = httpclientpool.Get(e.opts, &httpclientpool.Configuration{})
 		if err != nil {

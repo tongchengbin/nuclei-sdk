@@ -25,6 +25,5 @@ func TestSimpleEngine(t *testing.T) {
 	assert.Nil(t, err)
 	results, err := eg.ExecuteWithProvider(context.Background(), provider.NewSimpleInputProviderWithUrls("http://127.0.0.1:5000"), []string{"test-dns"})
 	assert.Nil(t, err)
-	println("len", len(results))
 	assert.Equal(t, 1, len(results))
 }

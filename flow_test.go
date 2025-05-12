@@ -13,7 +13,11 @@ import (
 	"github.com/projectdiscovery/nuclei/v3/pkg/testutils"
 	"github.com/projectdiscovery/ratelimit"
 	"github.com/stretchr/testify/require"
+	"github.com/zeebo/assert"
 	"log"
+	"net/http"
+	"net/http/httptest"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -45,17 +49,37 @@ func setup() {
 
 func TestFlowTemplateWithIndex(t *testing.T) {
 	// test
-
-	InitNucleiComponents(testutils.DefaultOptions)
-	Template, err := templates.Parse("C:\\Users\\tongc\\nuclei-templates\\http\\cves\\2024\\CVE-2024-4040.yaml", nil, executerOpts)
+	setup()
+	err := InitNucleiComponents(testutils.DefaultOptions)
+	assert.NoError(t, err)
+	executerOpts.Options.Debug = true
+	executerOpts.Options.DebugResponse = true
+	executerOpts.Options.DebugRequests = true
+	tempFile := filepath.Join(DefaultConfig.TemplatesDirectory, "http\\cves\\2024\\CVE-2024-4040.yaml")
+	Template, err := templates.Parse(tempFile, nil, executerOpts)
 	require.Nil(t, err, "could not parse template")
 
 	require.True(t, Template.Flow != "", "not a flow template") // this is classifer if template is flow or not
 
 	err = Template.Executer.Compile()
 	require.Nil(t, err, "could not compile template")
-
-	input := contextargs.NewWithInput(context.Background(), "http://127.0.0.1:8080")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		println(">>>>>>>>>>>>", r.URL.Path)
+		switch r.URL.Path {
+		case "/WebInterface/":
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("currentAuth", "1.1")
+			w.Write([]byte("Mock Server"))
+		case "/WebInterface/function/":
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "text/xml")
+			w.Write([]byte("<response>success</response>"))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+	input := contextargs.NewWithInput(context.Background(), server.URL)
 	ctx := scan.NewScanContext(context.Background(), input)
 	gotresults, err := Template.Executer.Execute(ctx)
 	require.Nil(t, err, "could not execute template")
