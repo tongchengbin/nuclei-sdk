@@ -101,10 +101,11 @@ func (e *SimpleEngine) ExecuteWithProvider(ctx context.Context, targets *provide
 			ctxArgs.MetaInput = target
 			ctx := scan.NewScanContext(ctx, ctxArgs)
 			ctx.OnResult = func(result *output.InternalWrappedEvent) {
-				if result.UsesInteractsh && len(result.Results) == 0 {
-					waitEvent = append(waitEvent, result)
-				} else {
+				if len(result.Results) > 0 {
 					results = append(results, result.Results...)
+				}
+				if result.UsesInteractsh && result.InternalEvent != nil && result.InternalEvent["interactsh-url"] != nil {
+					waitEvent = append(waitEvent, result)
 				}
 			}
 			_, err := tpl.Executer.ExecuteWithResults(ctx)
@@ -114,9 +115,12 @@ func (e *SimpleEngine) ExecuteWithProvider(ctx context.Context, targets *provide
 		}
 		return false
 	})
-	timeout := time.After(10 * time.Second) // 设置超时时间
+	println(">>>>>>>>>>>>>>>>>>>>>>>>")
+	timeout := time.After(12 * time.Second) // 设置超时时间
 	if len(waitEvent) > 0 {
+		println("event len:", len(waitEvent))
 		for _, evt := range waitEvent {
+			println("22 data event id:", evt)
 			for {
 				select {
 				case <-ctx.Done():
@@ -125,10 +129,13 @@ func (e *SimpleEngine) ExecuteWithProvider(ctx context.Context, targets *provide
 					return results, nil
 				default:
 					if evt.InteractshMatched.Load() {
+						if evt.OperatorsResult != nil {
+							println(evt.OperatorsResult.Matched, evt.OperatorsResult.Extracted)
+						}
 						if len(evt.Results) > 0 {
 							results = append(results, evt.Results...)
+							goto outer
 						}
-						goto outer
 					}
 					time.Sleep(100 * time.Millisecond)
 				}
