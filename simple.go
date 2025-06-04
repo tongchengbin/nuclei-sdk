@@ -115,12 +115,9 @@ func (e *SimpleEngine) ExecuteWithProvider(ctx context.Context, targets *provide
 		}
 		return false
 	})
-	println(">>>>>>>>>>>>>>>>>>>>>>>>")
 	timeout := time.After(12 * time.Second) // 设置超时时间
 	if len(waitEvent) > 0 {
-		println("event len:", len(waitEvent))
 		for _, evt := range waitEvent {
-			println("22 data event id:", evt)
 			for {
 				select {
 				case <-ctx.Done():
@@ -129,9 +126,6 @@ func (e *SimpleEngine) ExecuteWithProvider(ctx context.Context, targets *provide
 					return results, nil
 				default:
 					if evt.InteractshMatched.Load() {
-						if evt.OperatorsResult != nil {
-							println(evt.OperatorsResult.Matched, evt.OperatorsResult.Extracted)
-						}
 						if len(evt.Results) > 0 {
 							results = append(results, evt.Results...)
 							goto outer
