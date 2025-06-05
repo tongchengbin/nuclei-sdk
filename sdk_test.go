@@ -2,28 +2,56 @@ package nucleiSDK
 
 import (
 	"context"
-	"github.com/projectdiscovery/nuclei/v3/pkg/input/provider"
+	"github.com/julienschmidt/httprouter"
 	"github.com/projectdiscovery/nuclei/v3/pkg/testutils"
+	"github.com/projectdiscovery/nuclei/v3/pkg/types"
+	"github.com/projectdiscovery/retryablehttp-go"
 	"github.com/zeebo/assert"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
-func TestSimpleEngine(t *testing.T) {
-	opts := testutils.DefaultOptions
-	opts.Proxy = []string{"http://127.0.0.1:8080"}
-	opts.ProxyInternal = true
-	opts.Debug = true
-	opts.Verbose = true
-	opts.VerboseVerbose = true
-	opts.Templates = []string{"test-dns.yaml"}
-	eg, err := NewSimpleEngine(opts)
+func TestInteractsh(t *testing.T) {
+	router := httprouter.New()
+	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		value := r.Header.Get("url")
+		if value != "" {
+			if resp, _ := retryablehttp.DefaultClient().Get(value); resp != nil {
+				resp.Body.Close()
+			}
+		}
+	})
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	sdk, err := NewSDK(testutils.DefaultOptions)
 	assert.Nil(t, err)
-	err = eg.ApplyRequireDefault()
+	assert.NotNil(t, sdk)
+	err = sdk.ExecuteNucleiWithOptsCtx(context.Background(), []string{ts.URL}, SDKOptions(func(opts *types.Options) error {
+		opts.Proxy = []string{"http://127.0.0.1:8080"}
+		opts.ProxyInternal = true
+		opts.Debug = true
+		opts.Verbose = true
+		opts.VerboseVerbose = true
+		opts.Templates = []string{"tests/templates"}
+		return nil
+	}))
+
+}
+
+func TestSDK(t *testing.T) {
+	sdk, err := NewSDK(testutils.DefaultOptions)
 	assert.Nil(t, err)
-	err = eg.LoadAllTemplates()
-	assert.Equal(t, 1, len(eg.templateMaps))
+	assert.NotNil(t, sdk)
+	err = sdk.ExecuteNucleiWithOptsCtx(context.Background(), []string{"http://127.0.0.1:5000"}, SDKOptions(func(opts *types.Options) error {
+		opts.Proxy = []string{"http://127.0.0.1:8080"}
+		opts.ProxyInternal = true
+		opts.Debug = true
+		opts.Verbose = true
+		opts.VerboseVerbose = true
+		opts.Templates = []string{"test-dns.yaml"}
+		return nil
+	}))
 	assert.Nil(t, err)
-	results, err := eg.ExecuteWithProvider(context.Background(), provider.NewSimpleInputProviderWithUrls("http://127.0.0.1:5000"), []string{"test-dns"})
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(results))
 }

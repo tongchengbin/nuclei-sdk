@@ -66,10 +66,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = nucleiSdk.ApplyRequireDefault()
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	err = nucleiSdk.LoadAllTemplates()
 	if err != nil {
