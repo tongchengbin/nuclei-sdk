@@ -43,9 +43,8 @@ type NucleiSDK struct {
 
 // SafeOptions 包含公共参数，单例模式
 type SafeOptions struct {
-	progress progress.Progress
-	catalog  catalog.Catalog
-	parser   *templates.Parser
+	catalog catalog.Catalog
+	parser  *templates.Parser
 }
 type UnsafeOptions struct {
 	executeOpts protocols.ExecutorOptions
@@ -55,6 +54,9 @@ type UnsafeOptions struct {
 func (u *UnsafeOptions) Close() {
 	if u.executeOpts.Interactsh != nil {
 		u.executeOpts.Interactsh.Close()
+	}
+	if u.executeOpts.Progress != nil {
+		u.executeOpts.Progress.Stop()
 	}
 }
 
@@ -75,12 +77,9 @@ func NewSDK(opts *types.Options) (*NucleiSDK, error) {
 	if opts.HeadlessTemplateThreads <= 0 {
 		opts.HeadlessTemplateThreads = 1
 	}
-	progressImpl, _ := progress.NewStatsTicker(0, false, false, false, 0)
-
 	safeOptions := &SafeOptions{
-		progress: progressImpl,
-		catalog:  disk.NewCatalog(config.DefaultConfig.TemplatesDirectory),
-		parser:   templates.NewParser(),
+		catalog: disk.NewCatalog(config.DefaultConfig.TemplatesDirectory),
+		parser:  templates.NewParser(),
 	}
 	// Initialize protocols
 	sharedInit := &sync.Once{}
@@ -157,6 +156,7 @@ func (n *NucleiSDK) ExecuteNucleiWithOptsCtx(ctx context.Context, targets []stri
 // createEphemeralObjects creates ephemeral nuclei objects/instances/types
 func createEphemeralObjects(ctx context.Context, safeOpts *SafeOptions, opts *types.Options, callback ResultCallback) (*UnsafeOptions, error) {
 	u := &UnsafeOptions{}
+	progressImpl, _ := progress.NewStatsTicker(0, false, false, false, 0)
 	// init http client
 	var httpclient *retryablehttp.Client
 	var err error
@@ -184,7 +184,7 @@ func createEphemeralObjects(ctx context.Context, safeOpts *SafeOptions, opts *ty
 		outputWriter = output.NewMultiWriter(outputWriter, NewCallOutput(callback))
 
 	}
-	interactshOpts := interactsh.DefaultOptions(outputWriter, nil, safeOpts.progress)
+	interactshOpts := interactsh.DefaultOptions(outputWriter, nil, progressImpl)
 	interactshOpts.HTTPClient = httpclient
 	interactshClient, err := interactsh.New(interactshOpts)
 	if err != nil {
@@ -194,7 +194,7 @@ func createEphemeralObjects(ctx context.Context, safeOpts *SafeOptions, opts *ty
 	u.executeOpts = protocols.ExecutorOptions{
 		Output:          outputWriter,
 		Options:         opts,
-		Progress:        safeOpts.progress,
+		Progress:        progressImpl,
 		Catalog:         safeOpts.catalog,
 		IssuesClient:    nil,
 		RateLimiter:     ratelimit.New(ctx, 150, time.Second),
