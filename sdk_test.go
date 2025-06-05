@@ -28,7 +28,7 @@ func TestInteractsh(t *testing.T) {
 	sdk, err := NewSDK(testutils.DefaultOptions)
 	assert.Nil(t, err)
 	assert.NotNil(t, sdk)
-	err = sdk.ExecuteNucleiWithOptsCtx(context.Background(), []string{ts.URL}, SDKOptions(func(opts *types.Options) error {
+	result, err := sdk.ExecuteNucleiWithResult(context.Background(), []string{ts.URL}, SDKOptions(func(opts *types.Options) error {
 		opts.Proxy = []string{"http://127.0.0.1:8080"}
 		opts.ProxyInternal = true
 		opts.Debug = true
@@ -37,14 +37,15 @@ func TestInteractsh(t *testing.T) {
 		opts.Templates = []string{"tests/templates"}
 		return nil
 	}))
-
+	assert.Nil(t, err)
+	assert.True(t, len(result) > 0)
 }
 
-func TestSDK(t *testing.T) {
+func TestScanWithResult(t *testing.T) {
 	sdk, err := NewSDK(testutils.DefaultOptions)
 	assert.Nil(t, err)
 	assert.NotNil(t, sdk)
-	err = sdk.ExecuteNucleiWithOptsCtx(context.Background(), []string{"http://127.0.0.1:5000"}, SDKOptions(func(opts *types.Options) error {
+	results, err := sdk.ExecuteNucleiWithResult(context.Background(), []string{"http://127.0.0.1:5000"}, SDKOptions(func(opts *types.Options) error {
 		opts.Proxy = []string{"http://127.0.0.1:8080"}
 		opts.ProxyInternal = true
 		opts.Debug = true
@@ -54,4 +55,5 @@ func TestSDK(t *testing.T) {
 		return nil
 	}))
 	assert.Nil(t, err)
+	assert.True(t, len(results) > 0)
 }

@@ -43,7 +43,6 @@ type NucleiSDK struct {
 
 // SafeOptions 包含公共参数，单例模式
 type SafeOptions struct {
-	output   output.Writer
 	progress progress.Progress
 	catalog  catalog.Catalog
 	parser   *templates.Parser
@@ -76,14 +75,9 @@ func NewSDK(opts *types.Options) (*NucleiSDK, error) {
 	if opts.HeadlessTemplateThreads <= 0 {
 		opts.HeadlessTemplateThreads = 1
 	}
-	outputWriter, err := output.NewStandardWriter(opts)
-	if err != nil {
-		return nil, err
-	}
 	progressImpl, _ := progress.NewStatsTicker(0, false, false, false, 0)
 
 	safeOptions := &SafeOptions{
-		output:   outputWriter,
 		progress: progressImpl,
 		catalog:  disk.NewCatalog(config.DefaultConfig.TemplatesDirectory),
 		parser:   templates.NewParser(),
@@ -108,7 +102,16 @@ func NewSDK(opts *types.Options) (*NucleiSDK, error) {
 	return sdk, nil
 }
 
-func (n *NucleiSDK) ExecuteNucleiWithOptsCtx(ctx context.Context, targets []string, opts ...SDKOptions) error {
+func (n *NucleiSDK) ExecuteNucleiWithResult(ctx context.Context, targets []string, opts ...SDKOptions) ([]*output.ResultEvent, error) {
+	results := make([]*output.ResultEvent, 0)
+	callback := func(result *output.ResultEvent) error {
+		results = append(results, result)
+		return nil
+	}
+	err := n.ExecuteNucleiWithOptsCtx(ctx, targets, callback, opts...)
+	return results, err
+}
+func (n *NucleiSDK) ExecuteNucleiWithOptsCtx(ctx context.Context, targets []string, callback ResultCallback, opts ...SDKOptions) error {
 	//	所有的初始化都需要在这里进行
 	baseOpts := *n.options
 	for _, opt := range opts {
@@ -116,8 +119,12 @@ func (n *NucleiSDK) ExecuteNucleiWithOptsCtx(ctx context.Context, targets []stri
 			return err
 		}
 	}
+	err := loadProxyServers(&baseOpts)
+	if err != nil {
+		return err
+	}
 	//非线程安全 需要关闭的资源
-	unsafeOpts, err := createEphemeralObjects(ctx, n.safeOptions, &baseOpts)
+	unsafeOpts, err := createEphemeralObjects(ctx, n.safeOptions, &baseOpts, callback)
 	if err != nil {
 		return err
 	}
@@ -148,7 +155,7 @@ func (n *NucleiSDK) ExecuteNucleiWithOptsCtx(ctx context.Context, targets []stri
 }
 
 // createEphemeralObjects creates ephemeral nuclei objects/instances/types
-func createEphemeralObjects(ctx context.Context, safeOpts *SafeOptions, opts *types.Options) (*UnsafeOptions, error) {
+func createEphemeralObjects(ctx context.Context, safeOpts *SafeOptions, opts *types.Options, callback ResultCallback) (*UnsafeOptions, error) {
 	u := &UnsafeOptions{}
 	// init http client
 	var httpclient *retryablehttp.Client
@@ -168,7 +175,16 @@ func createEphemeralObjects(ctx context.Context, safeOpts *SafeOptions, opts *ty
 		// in testing it was found most of times when interactsh failed, it was due to failure in registering /polling requests
 		httpclient = retryablehttp.NewClient(retryablehttp.DefaultOptionsSingle)
 	}
-	interactshOpts := interactsh.DefaultOptions(safeOpts.output, nil, safeOpts.progress)
+	var outputWriter output.Writer
+	outputWriter, err = output.NewStandardWriter(opts)
+	if err != nil {
+		return nil, err
+	}
+	if callback != nil {
+		outputWriter = output.NewMultiWriter(outputWriter, NewCallOutput(callback))
+
+	}
+	interactshOpts := interactsh.DefaultOptions(outputWriter, nil, safeOpts.progress)
 	interactshOpts.HTTPClient = httpclient
 	interactshClient, err := interactsh.New(interactshOpts)
 	if err != nil {
@@ -176,7 +192,7 @@ func createEphemeralObjects(ctx context.Context, safeOpts *SafeOptions, opts *ty
 	}
 
 	u.executeOpts = protocols.ExecutorOptions{
-		Output:          safeOpts.output,
+		Output:          outputWriter,
 		Options:         opts,
 		Progress:        safeOpts.progress,
 		Catalog:         safeOpts.catalog,

@@ -5,11 +5,12 @@ go 1.23.0
 toolchain go1.23.9
 
 require (
-	github.com/kitabisa/go-ci v1.0.3
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/projectdiscovery/gologger v1.1.54
 	github.com/projectdiscovery/nuclei/v3 v3.4.3
 	github.com/projectdiscovery/ratelimit v0.0.80
+	github.com/projectdiscovery/retryablehttp-go v1.0.111
 	github.com/projectdiscovery/utils v0.4.18
 	github.com/zeebo/assert v1.3.1
 )
@@ -146,13 +147,11 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/kataras/jwt v0.1.10 // indirect
+	github.com/kitabisa/go-ci v1.0.3 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
-	github.com/labstack/echo/v4 v4.13.3 // indirect
-	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/leslie-qiwa/flat v0.0.0-20230424180412-f9d1cf014baa // indirect
 	github.com/lib/pq v1.10.9 // indirect
@@ -210,7 +209,6 @@ require (
 	github.com/projectdiscovery/rawhttp v0.1.90 // indirect
 	github.com/projectdiscovery/rdap v0.9.1-0.20221108103045-9865884d1917 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.99 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.111 // indirect
 	github.com/projectdiscovery/sarif v0.0.1 // indirect
 	github.com/projectdiscovery/tlsx v1.1.9 // indirect
 	github.com/projectdiscovery/uncover v1.0.10 // indirect
@@ -218,6 +216,7 @@ require (
 	github.com/projectdiscovery/yamldoc-go v1.0.6 // indirect
 	github.com/redis/go-redis/v9 v9.1.0 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect
+	github.com/remeh/sizedwaitgroup v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
