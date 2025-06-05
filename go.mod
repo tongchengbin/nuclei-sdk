@@ -5,16 +5,13 @@ go 1.23.0
 toolchain go1.23.9
 
 require (
-	github.com/go-playground/validator/v10 v10.22.1
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/pkg/errors v0.9.1
-	github.com/projectdiscovery/goflags v0.1.74
 	github.com/projectdiscovery/gologger v1.1.54
 	github.com/projectdiscovery/nuclei/v3 v3.4.3
 	github.com/projectdiscovery/ratelimit v0.0.80
 	github.com/projectdiscovery/retryablehttp-go v1.0.111
 	github.com/projectdiscovery/utils v0.4.18
-	github.com/stretchr/testify v1.10.0
 	github.com/zeebo/assert v1.3.1
 )
 
@@ -78,7 +75,6 @@ require (
 	github.com/cloudflare/circl v1.3.8 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/davidmz/go-pageant v1.0.2 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
@@ -106,6 +102,7 @@ require (
 	github.com/go-pg/pg v8.0.7+incompatible // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
+	github.com/go-playground/validator/v10 v10.22.1 // indirect
 	github.com/go-rod/rod v0.116.2 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.7.1 // indirect
@@ -150,7 +147,6 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/kataras/jwt v0.1.10 // indirect
 	github.com/kitabisa/go-ci v1.0.3 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
@@ -187,7 +183,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/praetorian-inc/fingerprintx v1.1.9 // indirect
 	github.com/projectdiscovery/asnmap v1.1.1 // indirect
@@ -199,6 +195,7 @@ require (
 	github.com/projectdiscovery/fasttemplate v0.0.2 // indirect
 	github.com/projectdiscovery/freeport v0.0.7 // indirect
 	github.com/projectdiscovery/go-smb2 v0.0.0-20240129202741-052cc450c6cb // indirect
+	github.com/projectdiscovery/goflags v0.1.74 // indirect
 	github.com/projectdiscovery/gostruct v0.0.2 // indirect
 	github.com/projectdiscovery/gozero v0.0.3 // indirect
 	github.com/projectdiscovery/hmap v0.0.88 // indirect
