@@ -57,3 +57,35 @@ func TestScanWithResult(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, len(results) > 0)
 }
+
+func TestScanMultGlobalCallback(t *testing.T) {
+	router := httprouter.New()
+	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		value := r.Header.Get("url")
+		if value != "" {
+			if resp, _ := retryablehttp.DefaultClient().Get(value); resp != nil {
+				resp.Body.Close()
+			}
+		}
+	})
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	sdk, err := NewSDK(testutils.DefaultOptions)
+	assert.Nil(t, err)
+	assert.NotNil(t, sdk)
+	for i := 0; i < 3; i++ {
+		results, err := sdk.ExecuteNucleiWithResult(context.Background(), []string{ts.URL}, SDKOptions(func(opts *types.Options) error {
+			opts.Proxy = []string{"http://127.0.0.1:8080"}
+			opts.ProxyInternal = true
+			opts.Debug = true
+			opts.Verbose = true
+			opts.VerboseVerbose = true
+			opts.Templates = []string{"./tests/templates/interactsh.yaml"}
+			return nil
+		}))
+		assert.Nil(t, err)
+		assert.Equal(t, 1, len(results))
+	}
+
+}

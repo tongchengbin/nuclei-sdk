@@ -204,6 +204,7 @@ func createEphemeralObjects(ctx context.Context, safeOpts *SafeOptions, opts *ty
 		ResumeCfg:       types.NewResumeCfg(),
 		Parser:          safeOpts.parser,
 		Browser:         nil,
+		DoNotCache:      true, // 多任务环境下必须禁止缓存，不然回调无法同步
 	}
 	if opts.ShouldUseHostError() {
 		//HostErrorsCache 是 Nuclei 中用于缓存主机错误信息的组件，它的主要功能是：
