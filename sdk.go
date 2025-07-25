@@ -31,6 +31,8 @@ import (
 
 // NucleiSDK 它封装了 nuclei 引擎的核心功能
 type NucleiSDK struct {
+	//
+	ctx context.Context
 	// Core components
 	options       *types.Options
 	templateStore map[string]*templates.Template
@@ -43,8 +45,9 @@ type NucleiSDK struct {
 
 // SafeOptions 包含公共参数，单例模式
 type SafeOptions struct {
-	catalog catalog.Catalog
-	parser  *templates.Parser
+	catalog     catalog.Catalog
+	parser      *templates.Parser
+	rateLimiter *ratelimit.Limiter
 }
 type UnsafeOptions struct {
 	executeOpts protocols.ExecutorOptions
@@ -77,9 +80,20 @@ func NewSDK(opts *types.Options) (*NucleiSDK, error) {
 	if opts.HeadlessTemplateThreads <= 0 {
 		opts.HeadlessTemplateThreads = 1
 	}
+	ctx := context.Background()
+	// 使用全局limit 可以避免多个任务同时扫描时速率、带宽控制不到位
+	var rateLimiter *ratelimit.Limiter
+	if opts.RateLimit > 0 {
+		rateLimiter = ratelimit.New(ctx, uint(opts.RateLimit), opts.RateLimitDuration)
+	} else {
+		rateLimiter = ratelimit.NewUnlimited(ctx)
+		// fix 目前nuclei 对NewUnlimited支持还有问题 if eo.RateLimiter.GetLimit() != uint(eo.Options.RateLimit) 没有判断
+		opts.RateLimit = int(rateLimiter.GetLimit())
+	}
 	safeOptions := &SafeOptions{
-		catalog: disk.NewCatalog(config.DefaultConfig.TemplatesDirectory),
-		parser:  templates.NewParser(),
+		catalog:     disk.NewCatalog(config.DefaultConfig.TemplatesDirectory),
+		parser:      templates.NewParser(),
+		rateLimiter: rateLimiter,
 	}
 	// Initialize protocols
 	sharedInit := &sync.Once{}
@@ -89,14 +103,13 @@ func NewSDK(opts *types.Options) (*NucleiSDK, error) {
 			gologger.Error().Msgf("Could not initialize protocols: %s", err)
 		}
 	})
-
 	// Create SDK instance
 	sdk := &NucleiSDK{
+		ctx:           ctx,
 		options:       opts,
 		templateStore: make(map[string]*templates.Template),
 		safeOptions:   safeOptions,
 	}
-
 	gologger.Debug().Msgf("Initialized NucleiSDK with options: %+v", opts)
 	return sdk, nil
 }
@@ -190,14 +203,14 @@ func createEphemeralObjects(ctx context.Context, safeOpts *SafeOptions, opts *ty
 	if err != nil {
 		return nil, err
 	}
-
+	// todo 这里可以判断limit 是否变化、针对特定任务实现速率控制、一般情况下不需要
 	u.executeOpts = protocols.ExecutorOptions{
 		Output:          outputWriter,
 		Options:         opts,
 		Progress:        progressImpl,
 		Catalog:         safeOpts.catalog,
 		IssuesClient:    nil,
-		RateLimiter:     ratelimit.New(ctx, 150, time.Second),
+		RateLimiter:     safeOpts.rateLimiter,
 		Interactsh:      interactshClient,
 		HostErrorsCache: nil,
 		Colorizer:       aurora.NewAurora(true),
@@ -207,17 +220,7 @@ func createEphemeralObjects(ctx context.Context, safeOpts *SafeOptions, opts *ty
 		DoNotCache:      true, // 多任务环境下必须禁止缓存，不然回调无法同步
 	}
 	if opts.ShouldUseHostError() {
-		//HostErrorsCache 是 Nuclei 中用于缓存主机错误信息的组件，它的主要功能是：
-		//错误追踪：记录在扫描过程中遇到的与特定主机相关的错误。
-		//错误限制：跟踪每个主机发生的错误次数，当错误次数超过某个阈值时，可以选择跳过该主机的后续扫描，避免浪费资源在可能不可达或有问题的主机上。
-		//性能优化：通过记住已知的错误状态，避免重复尝试可能会失败的操作，从而提高扫描效率。
-		//资源管理：防止因为反复尝试连接不可用主机而浪费资源。
 		u.executeOpts.HostErrorsCache = hosterrorscache.New(30, hosterrorscache.DefaultMaxHostsCount, nil)
-	}
-
-	if opts.RateLimit > 0 {
-		opts.RateLimitDuration = time.Minute
-		u.executeOpts.RateLimiter = ratelimit.New(ctx, uint(opts.RateLimit), opts.RateLimitDuration)
 	}
 	u.engine = core.New(opts)
 	u.engine.SetExecuterOptions(u.executeOpts)
