@@ -2,20 +2,17 @@ package nucleiSDK
 
 import (
 	"context"
+	"github.com/julienschmidt/httprouter"
+	"github.com/projectdiscovery/nuclei/v3/pkg/testutils"
+	"github.com/projectdiscovery/nuclei/v3/pkg/types"
+	"github.com/projectdiscovery/retryablehttp-go"
+	"github.com/zeebo/assert"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/julienschmidt/httprouter"
-	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/gologger/levels"
-	"github.com/projectdiscovery/nuclei/v3/pkg/testutils"
-	"github.com/projectdiscovery/nuclei/v3/pkg/types"
-	"github.com/projectdiscovery/retryablehttp-go"
-	"github.com/zeebo/assert"
 )
 
 func TestInteractsh(t *testing.T) {
