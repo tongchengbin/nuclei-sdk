@@ -87,6 +87,8 @@ func NewSDK(opts *types.Options) (*NucleiSDK, error) {
 		rateLimiter = ratelimit.New(ctx, uint(opts.RateLimit), opts.RateLimitDuration)
 	} else {
 		rateLimiter = ratelimit.NewUnlimited(ctx)
+		// fix 目前nuclei 对NewUnlimited支持还有问题 if eo.RateLimiter.GetLimit() != uint(eo.Options.RateLimit) 没有判断
+		opts.RateLimit = int(rateLimiter.GetLimit())
 	}
 	safeOptions := &SafeOptions{
 		catalog:     disk.NewCatalog(config.DefaultConfig.TemplatesDirectory),
@@ -218,11 +220,6 @@ func createEphemeralObjects(ctx context.Context, safeOpts *SafeOptions, opts *ty
 		DoNotCache:      true, // 多任务环境下必须禁止缓存，不然回调无法同步
 	}
 	if opts.ShouldUseHostError() {
-		//HostErrorsCache 是 Nuclei 中用于缓存主机错误信息的组件，它的主要功能是：
-		//错误追踪：记录在扫描过程中遇到的与特定主机相关的错误。
-		//错误限制：跟踪每个主机发生的错误次数，当错误次数超过某个阈值时，可以选择跳过该主机的后续扫描，避免浪费资源在可能不可达或有问题的主机上。
-		//性能优化：通过记住已知的错误状态，避免重复尝试可能会失败的操作，从而提高扫描效率。
-		//资源管理：防止因为反复尝试连接不可用主机而浪费资源。
 		u.executeOpts.HostErrorsCache = hosterrorscache.New(30, hosterrorscache.DefaultMaxHostsCount, nil)
 	}
 	u.engine = core.New(opts)
