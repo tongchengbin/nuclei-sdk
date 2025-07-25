@@ -47,7 +47,7 @@ func TestInteractsh(t *testing.T) {
 	assert.True(t, len(result) > 0)
 }
 
-func TestResult(t *testing.T) {
+func TestScanWithResult(t *testing.T) {
 	sdk, err := NewSDK(testutils.DefaultOptions)
 	assert.Nil(t, err)
 	assert.NotNil(t, sdk)
@@ -64,11 +64,7 @@ func TestResult(t *testing.T) {
 	assert.True(t, len(results) > 0)
 }
 
-func TestScanWithResult(t *testing.T) {
-	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
-	sdk, err := NewSDK(testutils.DefaultOptions)
-	assert.Nil(t, err)
-	assert.NotNil(t, sdk)
+func TestScanMultGlobalCallback(t *testing.T) {
 	router := httprouter.New()
 	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		value := r.Header.Get("url")
@@ -80,20 +76,22 @@ func TestScanWithResult(t *testing.T) {
 	})
 	ts := httptest.NewServer(router)
 	defer ts.Close()
-	for i := 0; i < 2; i++ {
+
+	sdk, err := NewSDK(testutils.DefaultOptions)
+	assert.Nil(t, err)
+	assert.NotNil(t, sdk)
+	for i := 0; i < 3; i++ {
 		results, err := sdk.ExecuteNucleiWithResult(context.Background(), []string{ts.URL}, SDKOptions(func(opts *types.Options) error {
 			opts.Proxy = []string{"http://127.0.0.1:8080"}
 			opts.ProxyInternal = true
 			opts.Debug = true
-			opts.DebugResponse = false
-			opts.DebugRequests = false
-			opts.Verbose = false
-			opts.VerboseVerbose = false
-			opts.Templates = []string{"tests/templates/interactsh.yaml"}
+			opts.Verbose = true
+			opts.VerboseVerbose = true
+			opts.Templates = []string{"./tests/templates/interactsh.yaml"}
 			return nil
 		}))
 		assert.Nil(t, err)
-		println("result", results)
+		assert.Equal(t, 1, len(results))
 	}
 
 }
