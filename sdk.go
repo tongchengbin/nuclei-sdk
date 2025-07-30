@@ -80,6 +80,9 @@ func NewSDK(opts *types.Options) (*NucleiSDK, error) {
 	if opts.HeadlessTemplateThreads <= 0 {
 		opts.HeadlessTemplateThreads = 1
 	}
+	ignoreFile := config.ReadIgnoreFile()
+	opts.ExcludeTags = append(opts.ExcludeTags, ignoreFile.Tags...)
+	opts.ExcludedTemplates = append(opts.ExcludedTemplates, ignoreFile.Files...)
 	ctx := context.Background()
 	// 使用全局limit 可以避免多个任务同时扫描时速率、带宽控制不到位
 	var rateLimiter *ratelimit.Limiter
@@ -90,6 +93,7 @@ func NewSDK(opts *types.Options) (*NucleiSDK, error) {
 		// fix 目前nuclei 对NewUnlimited支持还有问题 if eo.RateLimiter.GetLimit() != uint(eo.Options.RateLimit) 没有判断
 		opts.RateLimit = int(rateLimiter.GetLimit())
 	}
+
 	safeOptions := &SafeOptions{
 		catalog:     disk.NewCatalog(config.DefaultConfig.TemplatesDirectory),
 		parser:      templates.NewParser(),
